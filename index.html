@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+
+
+    <meta charset="utf-8">
+    <title>Project Ranger</title>
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+
+    <style>
+        body {
+            margin:0;
+            padding:0;
+            font-family:
+            sans-serif;
+        }
+
+        h1 {
+            position: absolute;
+            left: 70px;
+            top: 10px;
+            padding: 3px 2%;
+            margin: 0;
+            background-color: rgb(188,91,104);
+            box-shadow: 0 0 12px rgba(0,0,0,0.4);
+            border-radius: 3px;
+            color: whitesmoke;
+            font-size: 1.5em;
+            z-index: 800;
+          }
+
+          #map {
+            position:absolute;
+            width:100%;
+            height: 100%;
+           }
+          #i1 {
+            font-size: .67em;
+          }
+
+
+
+    </style>
+  </head>
+
+    <body>
+
+      <div id='map'></div>
+
+      <h1> NC Coal Ash Fill Sites <br/> <div id='i1'><i>in Cubic Yards<i/></div> </h1>
+
+      <!-- DEPRECRIATED <script id='jQuery' src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+      <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js"></script>
+
+                    -->
+      <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.8.0/dist/leaflet.css" integrity="sha512-hoalWLoI8r4UszCkZ5kL8vayOGVae1oxXe/2A4AO6J9+580uKHDO3JdHb7NzwwzK5xr/Fs0W40kiNHxM9vyTtQ==" crossorigin="" />
+      <script src="https://unpkg.com/leaflet@1.8.0/dist/leaflet.js" integrity="sha512-BB3hKbKWOc9Ez/TAwyWxNXeoV9c1v6FIeYiBieIWkpLjauysF18NzgR1MBNBXf8/KABdlkX68nAhlwcDFLGPCQ==" crossorigin=""></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-ajax/2.1.0/leaflet.ajax.min.js"></script>
+
+
+
+
+
+
+      <script type="text/javascript">
+        //init map
+        var map = L.map('map' , {
+
+          center: [34.969619, -79.608586], // 35 centered up fixed h/w // 78-74 moves left to visual data
+          zoom: 6.75,
+
+        });
+
+        var Stamen_TonerLite = L.tileLayer('https://stamen-tiles-{s}.a.ssl.fastly.net/toner-lite/{z}/{x}/{y}{r}.{ext}', {
+
+              attribution: 'Map tiles by <a href="http://stamen.com">Stamen Design</a>, <a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+              ext: 'png'
+
+          }).addTo(map);
+          // find custombasemap in morning, gn bro
+
+
+             // [131319.9, 16000.0, 'NODATA', 'NODATA', 50000.0, 'NODATA', 13500.0, 66618.0, 200.0, 905238.0, 12080.0, 154000.0, 6689.0, 7000.0, 38000.0, 30000.0, 9700.0, 3750.0, 225.0, 176000.0, 72000.0, 100500.0, 'NODATA', 'NODATA', 11250.0, 'NODATA', 18750.0, 30750.0, 8000.0, 408612.0, 25000.0, 475.0, 9700.0, 243848.0, 725000.0, 40000.0, 'NODATA', 5000.0]
+             // Average: 87347.4974 Cubic yds. coal ash used in fill
+             var minEst = 200;
+             var maxEst = 905238;
+
+               // just played around until the scaling was relative
+               // NOT PSYCHOLOGICAL quite arbitrary in choice
+              function appropriateScaling(val){
+                if (val > 10000){
+                  val = Math.pow((val/2),.5) * .1;
+                }
+                else {
+                  val = 9
+                }
+                return val
+              }
+
+              // NcDot County Boundary ShapeFile
+              //Downloaded as GeoJson from <a href='https://www.nconemap.gov/datasets/NCDOT::ncdot-county-boundaries/explore?location=35.103575%2C-79.919050%2C7.06'>NcBoundaries</a>
+              ncCountyShape = L.geoJson.ajax('assets/NCDOT_County_Boundaries.geojson',{
+                      attribution: 'Map: River Pyle,</br> Data: <a href="https:www.nconemap.gov/datasets/NCDOT::ncdot-county-boundaries/explore?location=35.103575%2C-79.919050%2C7.06">NCDOT County Boundaries</a>',
+                      weight: .5,
+                      opacity: .6,
+                      color: '#7E5BBC',
+
+                    }).addTo(map);
+
+              // colors: https://htmlcolorcodes.com/color-picker/
+
+              var coalAshSites = L.geoJson.ajax(['assets/coalAshFills.geojson' ],{
+              onEachFeature: popUp,
+              attribution: 'Data: <a href="https://ncdenr.maps.arcgis.com/apps/webappviewer/index.html?id=7dd59be2750b40bebebfa49fc383f688">NCDEQ Waste Management Site Locator Tool</a>',
+              pointToLayer: function ( feature , x){
+                return L.circleMarker(x, {
+                  color: '#BC5B68',
+                  opacity: 1,
+                  weight: 2,
+                  fillColor: '#5BBCAF',
+                  fillOpacity: 1,
+                  radius: appropriateScaling(feature.properties.estCuYd),
+
+                })}}).addTo(map).on({
+                  mouseover: function(e){
+
+                    this.setStyle({color:'#BB352A'})
+                    //this.refresh()
+                    // clicking on danville site refreshes page for some reason?
+
+                  },
+                  mouseout: function(e){
+                    this.refresh()
+                  }
+                });
+
+                coalAshSites.on('click',popUp)
+                function popUp(f,l){
+                      var out = [];
+                      if (f.properties){
+                          for(key in f.properties){
+                              out.push(key+": "+f.properties[key]);
+                          }
+                          l.bindPopup(out.join("<br />"));
+                      }
+                  }
+
+      </script>
+    </body>
+</html>
